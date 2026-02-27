@@ -2,7 +2,6 @@ import re
 import os
 import logging
 from bs4 import BeautifulSoup
-from fastapi import FastAPI, HTTPException
 import requests
 from dotenv import load_dotenv
 
@@ -13,8 +12,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 load_dotenv()
-
-app = FastAPI()
 
 URL = "https://dgii.gov.do/estadisticas/tasaCambio/Paginas/default.aspx"
 
@@ -54,50 +51,38 @@ def get_rate():
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
     }
 
-    try:
-        logger.info("Sending GET request to DGII website")
-        response = requests.get(URL, headers=headers, timeout=15)
-        response.raise_for_status()
-        logger.info(f"Successfully received response from DGII. Status code: {response.status_code}")
+    logger.info("Sending GET request to DGII website")
+    response = requests.get(URL, headers=headers, timeout=15)
+    response.raise_for_status()
+    logger.info(f"Successfully received response from DGII. Status code: {response.status_code}")
 
-        logger.info("Parsing HTML content with BeautifulSoup")
-        soup = BeautifulSoup(response.text, 'html.parser')
-        scripts = soup.find_all("script")
-        logger.info(f"Found {len(scripts)} script tags in the page")
+    logger.info("Parsing HTML content with BeautifulSoup")
+    soup = BeautifulSoup(response.text, 'html.parser')
+    scripts = soup.find_all("script")
+    logger.info(f"Found {len(scripts)} script tags in the page")
 
-        logger.info("Searching for script containing 'Dólar' keyword")
-        script_con_data = ""
-        for s in scripts:
-            if s.string and "Dólar" in s.string:
-                script_con_data = s.string
-                logger.info("Found script with exchange rate data")
-                break
+    logger.info("Searching for script containing 'Dólar' keyword")
+    script_con_data = ""
+    for s in scripts:
+        if s.string and "Dólar" in s.string:
+            script_con_data = s.string
+            logger.info("Found script with exchange rate data")
+            break
 
-        if not script_con_data:
-            logger.error("No script containing 'Dólar' keyword was found")
-            raise HTTPException(status_code=404, detail="Exchange rate data not found in scripts")
+    if not script_con_data:
+        logger.error("No script containing 'Dólar' keyword was found")
 
-        logger.info("Extracting exchange rate value using regex pattern")
-        match = re.search(r"RD\$\s*([\d\.]+)", script_con_data)
+    logger.info("Extracting exchange rate value using regex pattern")
+    match = re.search(r"RD\$\s*([\d\.]+)", script_con_data)
 
-        if match:
-            rate_value = float(match.group(1))
-            logger.info(f"Successfully extracted exchange rate: {rate_value} DOP/USD")
-            update_alegra_rate(rate_value)
-            logger.info("Exchange rate retrieval and update process completed successfully")
-            return rate_value
+    if match:
+        rate_value = float(match.group(1))
+        logger.info(f"Successfully extracted exchange rate: {rate_value} DOP/USD")
+        update_alegra_rate(rate_value)
+        logger.info("Exchange rate retrieval and update process completed successfully")
+        return rate_value
 
-        logger.error("Regex pattern did not match any exchange rate value in the script")
-        raise HTTPException(status_code=404, detail="Exchange rate value not found in script")
-
-    except HTTPException:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"HTTP request failed: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch exchange rate: {str(e)}")
-    except Exception as e:
-        logger.error(f"Unexpected error occurred: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
+    return None
 
 
 if __name__ == "__main__":
