@@ -77,6 +77,7 @@ def get_rate():
 
     if match:
         rate_value = float(match.group(1))
+        rate_value = int(rate_value * 100) / 100
         logger.info(f"Successfully extracted exchange rate: {rate_value} DOP/USD")
         update_alegra_rate(rate_value)
         logger.info("Exchange rate retrieval and update process completed successfully")
