@@ -79,7 +79,6 @@ def get_rate():
         rate_value = float(match.group(1))
         rate_value = int(rate_value * 100) / 100
         logger.info(f"Successfully extracted exchange rate: {rate_value} DOP/USD")
-        os.environ["USD_EXCHANGE_RATE"] = str(rate_value)
         update_alegra_rate(rate_value)
         logger.info("Exchange rate retrieval and update process completed successfully")
         return rate_value
