@@ -1,8 +1,11 @@
-import re
-import os
 import logging
-from bs4 import BeautifulSoup
+import os
+import pickle
+import re
+
+import redis
 import requests
+from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
 logging.basicConfig(
@@ -14,6 +17,16 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 URL = "https://dgii.gov.do/estadisticas/tasaCambio/Paginas/default.aspx"
+
+
+def update_setting(value):
+    client = redis.Redis.from_url(os.getenv('REDIS_URL'), decode_responses=False)
+
+    full_key = f"default:1:usd_exchange_rate"
+
+    serialized_value = pickle.dumps(value, protocol=pickle.DEFAULT_PROTOCOL)
+
+    client.setex(full_key, 86400, serialized_value)
 
 
 def update_alegra_rate(rate_value):
@@ -79,6 +92,7 @@ def get_rate():
         rate_value = float(match.group(1))
         rate_value = int(rate_value * 100) / 100
         logger.info(f"Successfully extracted exchange rate: {rate_value} DOP/USD")
+        update_setting(rate_value)
         update_alegra_rate(rate_value)
         logger.info("Exchange rate retrieval and update process completed successfully")
         return rate_value
