@@ -26,7 +26,7 @@ def update_setting(value):
 
     serialized_value = pickle.dumps(value, protocol=pickle.DEFAULT_PROTOCOL)
 
-    client.setex(full_key, 86400, serialized_value)
+    client.setex(full_key, 43200, serialized_value)
 
 
 def update_alegra_rate(rate_value):
